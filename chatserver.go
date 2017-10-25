@@ -7,6 +7,7 @@ import "time"
 
 
 // TODO: Add docstrings
+// TODO: Fix Problems with newline
 
 
 type user struct {
@@ -14,10 +15,11 @@ type user struct {
     name string
     conn net.Conn
     address net.Addr
-    joined Time
+    joined time.Time
 }
 
 var clients []user
+var uid int   // id
 
 func main() {
 
@@ -27,22 +29,22 @@ func main() {
     acceptClients(ln)
 }
 
-func manageClient(c net.Conn) {
+func manageClient(c net.Conn, id int) {
     send(c,"Welcome to this echo server, Whats your name:\n")
 
     name := receive(c)
 
-    fmt.Println(name, "just connected")
-
     client := createClient(c, id, name)
+
+    fmt.Println(client.name, "connected")
 
     clients = append(clients, client)
 
     for {
         msg := receive(c)
         if msg == "-q\n" {
-            send(c, "-q")
-            fmt.Println(c.RemoteAddr(), " left")
+            send(c, "-q\n")
+            fmt.Println(client.name, " left")
             removeClient(c)
             c.Close()
             return
@@ -55,18 +57,18 @@ func manageClient(c net.Conn) {
 func acceptClients(ln net.Listener) {
     for {
         c, _ := ln.Accept()
-        fmt.Println(c.RemoteAddr(), " just connected")
-        go manageClient(c)
+        uid++
+        go manageClient(c, uid)
     }
 }
 
 func createClient(c net.Conn, id int, name string) user {
-    return []user{
+    return user{
         userId: id,
         name: name,
         conn: c,
         address: c.RemoteAddr(),
-        joined: time.Now()
+        joined: time.Now(),
     }
 }
 

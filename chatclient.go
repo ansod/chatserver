@@ -11,10 +11,10 @@ func main() {
     conn, _ := net.Dial("tcp", "127.0.0.1:5555")
 
     msg := receive(conn)
-    fmt.Println(msg)
+    fmt.Print(msg)
 
     name, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-    send(conn, name + "\n")
+    send(conn, name)
 
     for {
         fmt.Println("Write a message:")
