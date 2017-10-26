@@ -4,6 +4,7 @@ import "fmt"
 import "net"
 import "bufio"
 import "time"
+import "strings"
 
 
 // TODO: Add docstrings
@@ -42,8 +43,8 @@ func manageClient(c net.Conn, id int) {
 
     for {
         msg := receive(c)
-        if msg == "-q\n" {
-            send(c, "-q\n")
+        if msg == "-q" {
+            send(c, "-q")
             fmt.Println(client.name, " left")
             removeClient(c)
             c.Close()
@@ -92,11 +93,13 @@ func getClientsInfo() {
 }
 
 func send(c net.Conn, msg string) {
-    c.Write([]byte(msg))
+    c.Write([]byte(msg + "\n"))
 }
 
 func receive(c net.Conn) string {
     msg, _ := bufio.NewReader(c).ReadString('\n')
+
+    msg = strings.Replace(msg, "\n", "", -1)
 
     return msg
 }

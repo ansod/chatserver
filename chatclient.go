@@ -5,6 +5,7 @@ import "fmt"
 import "net"
 import "bufio"
 import "os"
+import "strings"
 
 func main() {
 
@@ -20,11 +21,11 @@ func main() {
         fmt.Println("Write a message:")
         text, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 
-        send(conn, text + "\n")
+        send(conn, text)
 
         msg := receive(conn)
 
-        if msg == "-q\n" {
+        if msg == "-q" {
             break
         }
 
@@ -36,10 +37,13 @@ func main() {
 }
 
 func send(c net.Conn, msg string) {
-    c.Write([]byte(msg))
+    c.Write([]byte(msg + "\n"))
 }
 
 func receive(c net.Conn) string {
     msg, _ := bufio.NewReader(c).ReadString('\n')
+
+    msg = strings.Replace(msg, "\n", "")
+
     return msg
 }
