@@ -12,7 +12,7 @@ func main() {
     conn, _ := net.Dial("tcp", "127.0.0.1:5555")
 
     msg := receive(conn)
-    fmt.Print(msg)
+    fmt.Println(msg)
 
     name, _ := bufio.NewReader(os.Stdin).ReadString('\n')
     send(conn, name)
@@ -43,7 +43,7 @@ func send(c net.Conn, msg string) {
 func receive(c net.Conn) string {
     msg, _ := bufio.NewReader(c).ReadString('\n')
 
-    msg = strings.Replace(msg, "\n", "")
+    msg = strings.Replace(msg, "\n", "", -1)
 
     return msg
 }
