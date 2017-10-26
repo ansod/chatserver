@@ -5,10 +5,10 @@ import "net"
 import "bufio"
 import "time"
 import "strings"
+import "os"
 
 
 // TODO: Add docstrings
-// TODO: Fix Problems with newline
 
 
 type user struct {
@@ -16,7 +16,7 @@ type user struct {
     name string
     conn net.Conn
     address net.Addr
-    joined time.Time
+    joined string
 }
 
 var clients []user
@@ -27,11 +27,32 @@ func main() {
     fmt.Println("Server has started")
     ln, _ := net.Listen("tcp", ":5555")
 
-    acceptClients(ln)
+    go acceptClients(ln)
+    manageServer()
+
+}
+
+func manageServer() {
+    var cmd string
+
+    for {
+        cmd, _ = bufio.NewReader(os.Stdin).ReadString('\n')
+        cmd = strings.Replace(cmd, "\n", "", -1)
+
+        //fmt.Println("You entered: ", cmd)
+
+        switch cmd {
+            case "-q": return
+            case "-help": fmt.Println(getCommands())
+            case "-users": fmt.Println(getUserInfo())
+            default: fmt.Println("Unknown command")
+        }
+
+    }
 }
 
 func manageClient(c net.Conn, id int) {
-    send(c,"Welcome to this echo server, Whats your name:\n")
+    send(c,"Welcome to this echo server, Whats your name:")
 
     name := receive(c)
 
@@ -64,12 +85,13 @@ func acceptClients(ln net.Listener) {
 }
 
 func createClient(c net.Conn, id int, name string) user {
+    time := strings.Split(time.Now().String(), ".")[0]
     return user{
         userId: id,
         name: name,
         conn: c,
         address: c.RemoteAddr(),
-        joined: time.Now(),
+        joined: time,
     }
 }
 
@@ -82,16 +104,6 @@ func removeClient(c net.Conn) {
     }
 }
 
-// TODO: Create func
-func sendToAll() {
-
-}
-
-// TODO: Create func
-func getClientsInfo() {
-
-}
-
 func send(c net.Conn, msg string) {
     c.Write([]byte(msg + "\n"))
 }
@@ -102,4 +114,22 @@ func receive(c net.Conn) string {
     msg = strings.Replace(msg, "\n", "", -1)
 
     return msg
+}
+
+// TODO: Create func
+func sendToAll() {
+
+}
+
+func getUserInfo() string {
+    str := "<List of current users>\n"
+    for _, user := range clients {
+        str += fmt.Sprintf("%d: %s, %s, (%s)\n", user.userId, user.name, user.address, user.joined)
+    }
+
+    return str
+}
+
+func getCommands() string {
+    return "<List of commands>\n-q: Kill server\n-users: Get user info\n"
 }
