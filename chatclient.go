@@ -1,49 +1,69 @@
 package main
 
+import (
+    "fmt"
+    "net"
+    "bufio"
+    "os"
+    "strings"
+    "encoding/gob"
+)
 
-import "fmt"
-import "net"
-import "bufio"
-import "os"
-import "strings"
+// TODO: Add docstrings
+
+
+type Message struct {
+    Sender string
+    Text string
+}
+
 
 func main() {
 
-    conn, _ := net.Dial("tcp", "127.0.0.1:5555")
+    c, _ := net.Dial("tcp", "127.0.0.1:5555")
 
-    msg := receive(conn)
-    fmt.Println(msg)
+    msg := receive(c)
+    fmt.Println(msg.Text)
 
     name, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-    send(conn, name)
+
+    send(c, Message{Sender: name, Text: name})
 
     for {
         fmt.Println("Write a message:")
         text, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 
-        send(conn, text)
+        send(c, Message{name, text})
 
-        msg := receive(conn)
+        msg := receive(c)
 
-        if msg == "-q" {
+        if msg.Text == "-q" {
             break
         }
 
-        fmt.Println("Message from server: ", msg)
+        fmt.Println("Message from server: ", msg.Text)
     }
 
-    conn.Close()
-
+    c.Close()
 }
 
-func send(c net.Conn, msg string) {
-    c.Write([]byte(msg + "\n"))
+func send(c net.Conn, msg Message) {
+    msg.Sender = strings.Replace(msg.Sender, "\n", "", -1)
+    msg.Text = strings.Replace(msg.Text, "\n", "", -1)
+
+    _ = gob.NewEncoder(c).Encode(msg)
+
+    //c.Write([]byte(msg + "\n"))
 }
 
-func receive(c net.Conn) string {
-    msg, _ := bufio.NewReader(c).ReadString('\n')
+func receive(c net.Conn) Message {
+    var msg Message
+    _ = gob.NewDecoder(c).Decode(&msg)
 
-    msg = strings.Replace(msg, "\n", "", -1)
+
+    //msg, _ := bufio.NewReader(c).ReadString('\n')
+
+    //msg = strings.Replace(msg, "\n", "", -1)
 
     return msg
 }

@@ -1,17 +1,20 @@
 package main
 
-import "fmt"
-import "net"
-import "bufio"
-import "time"
-import "strings"
-import "os"
+import (
+    "fmt"
+    "net"
+    "bufio"
+    "time"
+    "strings"
+    "os"
+    "encoding/gob"
+)
 
 
 // TODO: Add docstrings
 
 
-type user struct {
+type User struct {
     userId int
     name string
     conn net.Conn
@@ -19,7 +22,13 @@ type user struct {
     joined string
 }
 
-var clients []user
+type Message struct {
+    Sender string
+    Text string
+}
+
+
+var clients []User
 var uid int   // id
 
 func main() {
@@ -39,8 +48,7 @@ func manageServer() {
         cmd, _ = bufio.NewReader(os.Stdin).ReadString('\n')
         cmd = strings.Replace(cmd, "\n", "", -1)
 
-        //fmt.Println("You entered: ", cmd)
-
+        // TODO: Send -q to all clients
         switch cmd {
             case "-q": return
             case "-help": fmt.Println(getCommands())
@@ -52,11 +60,11 @@ func manageServer() {
 }
 
 func manageClient(c net.Conn, id int) {
-    send(c,"Welcome to this echo server, Whats your name:")
+    send(c, Message{"server", "Welcome to this echo server, Whats your name:"})
 
     name := receive(c)
 
-    client := createClient(c, id, name)
+    client := createClient(c, id, name.Sender)
 
     fmt.Println(client.name, "connected")
 
@@ -64,15 +72,15 @@ func manageClient(c net.Conn, id int) {
 
     for {
         msg := receive(c)
-        if msg == "-q" {
-            send(c, "-q")
+        if msg.Text == "-q" {
+            send(c, Message{"server", "-q"})
             fmt.Println(client.name, " left")
             removeClient(c)
             c.Close()
             return
         }
-        fmt.Println("Message received from client: ", msg)
-        send(c, msg)
+        fmt.Println(msg.Sender + ": " + msg.Text)
+        send(c, Message{"server", msg.Text})
     }
 }
 
@@ -84,9 +92,9 @@ func acceptClients(ln net.Listener) {
     }
 }
 
-func createClient(c net.Conn, id int, name string) user {
+func createClient(c net.Conn, id int, name string) User {
     time := strings.Split(time.Now().String(), ".")[0]
-    return user{
+    return User{
         userId: id,
         name: name,
         conn: c,
@@ -104,20 +112,25 @@ func removeClient(c net.Conn) {
     }
 }
 
-func send(c net.Conn, msg string) {
-    c.Write([]byte(msg + "\n"))
+func send(c net.Conn, msg Message) {
+    _ = gob.NewEncoder(c).Encode(msg)
+
+    //c.Write([]byte(msg + "\n"))
 }
 
-func receive(c net.Conn) string {
-    msg, _ := bufio.NewReader(c).ReadString('\n')
+func receive(c net.Conn) Message {
+    var msg Message
+    _ = gob.NewDecoder(c).Decode(&msg)
 
-    msg = strings.Replace(msg, "\n", "", -1)
+    //msg, _ := bufio.NewReader(c).ReadString('\n')
+
+    //msg.Text = strings.Replace(msg.Text, "\n", "", -1)
 
     return msg
 }
 
 // TODO: Create func
-func sendToAll() {
+func sendToAll(msg string, user User) {
 
 }
 
