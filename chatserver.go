@@ -24,6 +24,7 @@ type User struct {
 
 type Message struct {
     Sender string
+    Type string
     Text string
 }
 
@@ -48,9 +49,8 @@ func manageServer() {
         cmd, _ = bufio.NewReader(os.Stdin).ReadString('\n')
         cmd = strings.Replace(cmd, "\n", "", -1)
 
-        // TODO: Send -q to all clients
         switch cmd {
-            case "-q": return
+            case "-q": sendToAll(Message{"server", "quit", "-q"}); return
             case "-help": fmt.Println(getCommands())
             case "-users": fmt.Println(getUserInfo())
             default: fmt.Println("Unknown command")
@@ -60,7 +60,7 @@ func manageServer() {
 }
 
 func manageClient(c net.Conn, id int) {
-    send(c, Message{"server", "Welcome to this echo server, Whats your name:"})
+    send(c, Message{"server", "welcome", "Welcome to this echo server, Whats your name:"})
 
     name := receive(c)
 
@@ -73,14 +73,14 @@ func manageClient(c net.Conn, id int) {
     for {
         msg := receive(c)
         if msg.Text == "-q" {
-            send(c, Message{"server", "-q"})
+            send(c, Message{"server", "quit", "-q"})
             fmt.Println(client.name, " left")
             removeClient(c)
             c.Close()
-            return
+            break
         }
         fmt.Println(msg.Sender + ": " + msg.Text)
-        send(c, Message{"server", msg.Text})
+        send(c, Message{"server", "chat", msg.Text})
     }
 }
 
@@ -115,23 +115,19 @@ func removeClient(c net.Conn) {
 func send(c net.Conn, msg Message) {
     _ = gob.NewEncoder(c).Encode(msg)
 
-    //c.Write([]byte(msg + "\n"))
 }
 
 func receive(c net.Conn) Message {
     var msg Message
     _ = gob.NewDecoder(c).Decode(&msg)
 
-    //msg, _ := bufio.NewReader(c).ReadString('\n')
-
-    //msg.Text = strings.Replace(msg.Text, "\n", "", -1)
-
     return msg
 }
 
-// TODO: Create func
-func sendToAll(msg string, user User) {
-
+func sendToAll(msg Message) {
+    for _, user := range clients {
+        send(user.conn, msg)
+    }
 }
 
 func getUserInfo() string {
