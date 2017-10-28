@@ -11,9 +11,9 @@ import (
 
 // TODO: Add docstrings
 
-
 type Message struct {
     Sender string
+    Type string
     Text string
 }
 
@@ -22,29 +22,27 @@ func main() {
 
     c, _ := net.Dial("tcp", "127.0.0.1:5555")
 
-    msg := receive(c)
-    fmt.Println(msg.Text)
+    receive(c)
 
     name, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 
-    send(c, Message{Sender: name, Text: name})
+    send(c, Message{Sender: name, Type: "welcome", Text: name})
+
+
+    go chat(c, name)
+    receive(c)
+
+    c.Close()
+}
+
+func chat(c net.Conn, name string) {
 
     for {
         fmt.Println("Write a message:")
         text, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 
-        send(c, Message{name, text})
-
-        msg := receive(c)
-
-        if msg.Text == "-q" {
-            break
-        }
-
-        fmt.Println("Message from server: ", msg.Text)
+        send(c, Message{name, "chat", text})
     }
-
-    c.Close()
 }
 
 func send(c net.Conn, msg Message) {
@@ -52,18 +50,23 @@ func send(c net.Conn, msg Message) {
     msg.Text = strings.Replace(msg.Text, "\n", "", -1)
 
     _ = gob.NewEncoder(c).Encode(msg)
-
-    //c.Write([]byte(msg + "\n"))
 }
 
-func receive(c net.Conn) Message {
-    var msg Message
-    _ = gob.NewDecoder(c).Decode(&msg)
+func receive(c net.Conn) {
+    for {
+        var msg Message
+        _ = gob.NewDecoder(c).Decode(&msg)
 
-
-    //msg, _ := bufio.NewReader(c).ReadString('\n')
-
-    //msg = strings.Replace(msg, "\n", "", -1)
-
-    return msg
+        switch msg.Type {
+        case "chat":
+            fmt.Println(msg.Sender + ": " + msg.Text)
+        case "welcome":
+            fmt.Println(msg.Sender + ": " + msg.Text)
+            return
+        case "quit":
+            return
+        default:
+            fmt.Println("subject:", msg.Type)
+        }
+    }
 }
