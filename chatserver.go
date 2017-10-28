@@ -30,7 +30,7 @@ type Message struct {
 
 
 var clients []User
-var uid int   // id
+var uid int   // user id
 
 func main() {
 
@@ -50,10 +50,18 @@ func manageServer() {
         cmd = strings.Replace(cmd, "\n", "", -1)
 
         switch cmd {
-            case "-q": sendToAll(Message{"server", "quit", "-q"}); return
-            case "-help": fmt.Println(getCommands())
-            case "-users": fmt.Println(getUserInfo())
-            default: fmt.Println("Unknown command")
+            case "-q":
+                sendToAll(Message{"server", "quit", "Server has been shut down"})
+                return
+
+            case "-help":
+                fmt.Println(getCommands())
+
+            case "-users":
+                fmt.Println(getUserInfo())
+
+            default:
+                fmt.Println("Unknown command")
         }
 
     }
@@ -76,11 +84,12 @@ func manageClient(c net.Conn, id int) {
             send(c, Message{"server", "quit", "-q"})
             fmt.Println(client.name, " left")
             removeClient(c)
+            sendToAll(Message{"server", "chat", client.name + " left"})
             c.Close()
             break
         }
         fmt.Println(msg.Sender + ": " + msg.Text)
-        send(c, Message{"server", "chat", msg.Text})
+        sendToAll(Message{client.name, "chat", msg.Text})
     }
 }
 
@@ -114,7 +123,6 @@ func removeClient(c net.Conn) {
 
 func send(c net.Conn, msg Message) {
     _ = gob.NewEncoder(c).Encode(msg)
-
 }
 
 func receive(c net.Conn) Message {
