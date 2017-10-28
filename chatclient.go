@@ -20,7 +20,17 @@ type Message struct {
 
 func main() {
 
-    c, _ := net.Dial("tcp", "127.0.0.1:5555")
+    if len(os.Args) != 3 {
+        fmt.Println("Join server with: go run chatclient.go ip port")
+        return
+    }
+
+    ip := os.Args[1]
+    port := os.Args[2]
+
+
+    address := ip + ":" + port
+    c, _ := net.Dial("tcp", address)
 
     receive(c)
 
